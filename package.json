@@ -3,7 +3,6 @@
   "version": "3.0.0",
   "description": "SPIDEY OFFICIAL - Instagram Downloader PRO v3.0",
   "main": "insta1.js",
-  "type": "module",
   "scripts": {
     "start": "node insta1.js"
   },
