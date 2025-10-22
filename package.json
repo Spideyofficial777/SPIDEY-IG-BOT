@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "axios": "^1.6.0",
-    "ruhend-scraper": "^1.1.6",
+    "ruhend-scraper": "^9.0.8",
     "telegraf": "^4.12.2"
   },
   "engines": {
