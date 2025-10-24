@@ -145,12 +145,17 @@ async function checkForceSub(userId) {
                     if (chat.username) {
                         inviteLink = `https://t.me/${chat.username}`;
                     } else {
-                        // For private channels, create invite link
-                        inviteLink = await bot.telegram.createChatInviteLink(channelId, {
-                            creates_join_request: true,
-                            member_limit: 1
-                        });
-                        inviteLink = inviteLink.invite_link;
+                        // For private channels, create simple invite link without member limit
+                        try {
+                            const invite = await bot.telegram.createChatInviteLink(channelId, {
+                                creates_join_request: true
+                                // Removed member_limit to fix the error
+                            });
+                            inviteLink = invite.invite_link;
+                        } catch (inviteError) {
+                            // If creating invite fails, use the channel ID format
+                            inviteLink = `https://t.me/c/${Math.abs(channelId).toString().slice(4)}`;
+                        }
                     }
                     
                     notJoined.push({
@@ -158,19 +163,19 @@ async function checkForceSub(userId) {
                         inviteLink: inviteLink,
                         channelId: channelId
                     });
-                } catch (inviteError) {
-                    console.error(`🔗 Invite error for ${channelId}:`, inviteError.message);
-                    const chat = await bot.telegram.getChat(channelId);
-                    notJoined.push({
-                        title: chat.title,
-                        inviteLink: `https://t.me/c/${Math.abs(channelId).toString().slice(4)}`,
-                        channelId: channelId
-                    });
+                } catch (error) {
+                    console.error(`🔗 Channel info error for ${channelId}:`, error.message);
+                    // If we can't get channel info, skip this channel
+                    continue;
                 }
             }
         } catch (error) {
             console.error(`🔍 Channel check error ${channelId}:`, error.message);
-            continue;
+            // If bot is not admin in this channel, skip it
+            if (error.description && error.description.includes('bot is not a member')) {
+                console.log(`🤖 Bot is not admin in channel ${channelId}, skipping...`);
+                continue;
+            }
         }
     }
     
