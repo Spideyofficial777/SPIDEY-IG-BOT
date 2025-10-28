@@ -11,7 +11,7 @@ const CONFIG = {
     ADMIN_CHANNEL: parseInt(process.env.ADMIN_CHANNEL) || -1002423451263,
     DB_FILE: path.join(__dirname, 'database.json'),
     PORT: process.env.PORT || 5000,
-    MULTI_FSUB: process.env.MULTI_FSUB ? process.env.MULTI_FSUB.split(' ').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : [-1001959922658, -1002461263750,  -1002433552221, -1002470391435],
+    MULTI_FSUB: process.env.MULTI_FSUB ? process.env.MULTI_FSUB.split(' ').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : [-1001959922658,  -1002433552221, -1002470391435],
     START_IMG: process.env.START_IMG ? process.env.START_IMG.split(' ') : [
         'https://graph.org/file/2518d4eb8c88f8f669f4c.jpg',
         'https://graph.org/file/d6d9d9b8d2dc779c49572.jpg',
