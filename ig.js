@@ -122,12 +122,11 @@ async function logDownload(userId, username, url, caption) {
             `📝 *ᴄᴀᴘᴛɪᴏɴ:* ${caption ? caption.substring(0, 100) + '...' : 'ɴᴏɴᴇ'}\n` +
             `📅 *ᴛɪᴍᴇ:* ${log.date}\n` +
             `📊 *ᴛᴏᴛᴀʟ ᴅᴏᴡɴʟᴏᴀᴅs:* ${database.stats.totalDownloads}`,
-            { parse_mode: 'Markdown' }
+            { parse_mode: 'Markdown', disable_web_page_preview: false }
         );
     } catch (error) {
         console.error('💥 Download log error:', error);
     }
-}
 
 // 🔒 POWERFUL FORCE SUBSCRIPTION SYSTEM
 async function checkForceSub(userId) {
