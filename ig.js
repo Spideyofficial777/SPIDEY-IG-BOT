@@ -127,6 +127,7 @@ async function logDownload(userId, username, url, caption) {
     } catch (error) {
         console.error('💥 Download log error:', error);
     }
+}
 
 // 🔒 POWERFUL FORCE SUBSCRIPTION SYSTEM
 async function checkForceSub(userId) {
