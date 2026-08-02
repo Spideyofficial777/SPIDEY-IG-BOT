@@ -2,7 +2,7 @@
 require('dotenv').config();
 
 module.exports = {
-    BOT_TOKEN: process.env.BOT_TOKEN || '7620991709:AAH2qNNm4UVOTxQvheJNiHMNV7KN1f4L0Lo',
+    BOT_TOKEN: process.env.BOT_TOKEN || '',
     ADMIN_ID: parseInt(process.env.ADMIN_ID) || 5518489725,
     ADMIN_CHANNEL: parseInt(process.env.ADMIN_CHANNEL) || -1002423451263,
     DB_FILE: process.env.DB_FILE || 'database.json',
