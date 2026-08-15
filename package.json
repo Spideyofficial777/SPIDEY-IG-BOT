@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node ig.js",
     "dev": "nodemon ig.js",
-    "check": "node -e \"require('./index.js')\""
+    "check": "node -e \"require('./ig.js')\""
   },
   "dependencies": {
     "axios": "^1.6.0",
