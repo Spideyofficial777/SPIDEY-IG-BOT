@@ -10,8 +10,8 @@ const CONFIG = {
     ADMIN_ID: parseInt(process.env.ADMIN_ID) || 5518489725,
     ADMIN_CHANNEL: parseInt(process.env.ADMIN_CHANNEL) || -1002423451263,
     DB_FILE: path.join(__dirname, 'database.json'),
-    PORT: process.env.PORT || 5000,
-    MULTI_FSUB: process.env.MULTI_FSUB ? process.env.MULTI_FSUB.split(' ').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : [-1001959922658,  -1002433552221, -1002470391435],
+    PORT: process.env.PORT || 5001,
+    MULTI_FSUB: process.env.MULTI_FSUB ? process.env.MULTI_FSUB.split(' ').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : [-1001959922658, -1002433552221, -1002470391435],
     START_IMG: process.env.START_IMG ? process.env.START_IMG.split(' ') : [
         'https://graph.org/file/2518d4eb8c88f8f669f4c.jpg',
         'https://graph.org/file/d6d9d9b8d2dc779c49572.jpg',
@@ -20,8 +20,7 @@ const CONFIG = {
         'https://graph.org/file/2c64ed483c8fcf2bab7dd.jpg'
     ],
     FORCESUB_IMG: process.env.FORCESUB_IMG || 'https://i.ibb.co/ZNC1Hnb/ad3f2c88a8f2.jpg',
-    PROCESSING_STICKER: 'CAACAgQAAxkDAAEBD89o-ek8xCsshJcVVDNGNlw_9wbAiAACGRAAAudLcFGAbsHU3KNJUzYE',
-    WELCOME_STICKER: 'CAACAgUAAxkBAAIdBGd7qZ7kMBTPT2YAAdnPRDtBSw9jwAACqwQAAr7vuFdHULNVi6H4nB4E'
+    PROCESSING_STICKER: 'CAACAgQAAxkDAAEBD89o-ek8xCsshJcVVDNGNlw_9wbAiAACGRAAAudLcFGAbsHU3KNJUzYE'
 };
 
 // 🎭 POWERFUL REACTIONS
@@ -122,7 +121,7 @@ async function logDownload(userId, username, url, caption) {
             `📝 *ᴄᴀᴘᴛɪᴏɴ:* ${caption ? caption.substring(0, 100) + '...' : 'ɴᴏɴᴇ'}\n` +
             `📅 *ᴛɪᴍᴇ:* ${log.date}\n` +
             `📊 *ᴛᴏᴛᴀʟ ᴅᴏᴡɴʟᴏᴀᴅs:* ${database.stats.totalDownloads}`,
-            { parse_mode: 'Markdown', disable_web_page_preview: false }
+            { parse_mode: 'Markdown' }
         );
     } catch (error) {
         console.error('💥 Download log error:', error);
@@ -139,43 +138,27 @@ async function checkForceSub(userId) {
             if (chatMember.status === 'left' || chatMember.status === 'kicked') {
                 try {
                     const chat = await bot.telegram.getChat(channelId);
-                    let inviteLink;
-                    
-                    // Fix for channel links - use public link if available
-                    if (chat.username) {
-                        inviteLink = `https://t.me/${chat.username}`;
-                    } else {
-                        // For private channels, create simple invite link without member limit
-                        try {
-                            const invite = await bot.telegram.createChatInviteLink(channelId, {
-                                creates_join_request: true
-                                // Removed member_limit to fix the error
-                            });
-                            inviteLink = invite.invite_link;
-                        } catch (inviteError) {
-                            // If creating invite fails, use the channel ID format
-                            inviteLink = `https://t.me/c/${Math.abs(channelId).toString().slice(4)}`;
-                        }
-                    }
-                    
+                    const inviteLink = await bot.telegram.createChatInviteLink(channelId, {
+                        creates_join_request: true,
+                        member_limit: 1
+                    });
                     notJoined.push({
                         title: chat.title,
-                        inviteLink: inviteLink,
+                        inviteLink: inviteLink.invite_link,
                         channelId: channelId
                     });
-                } catch (error) {
-                    console.error(`🔗 Channel info error for ${channelId}:`, error.message);
-                    // If we can't get channel info, skip this channel
-                    continue;
+                } catch (inviteError) {
+                    const chat = await bot.telegram.getChat(channelId);
+                    notJoined.push({
+                        title: chat.title,
+                        inviteLink: `https://t.me/${chat.username || 'c/' + Math.abs(channelId).toString().slice(4)}`,
+                        channelId: channelId
+                    });
                 }
             }
         } catch (error) {
             console.error(`🔍 Channel check error ${channelId}:`, error.message);
-            // If bot is not admin in this channel, skip it
-            if (error.description && error.description.includes('bot is not a member')) {
-                console.log(`🤖 Bot is not admin in channel ${channelId}, skipping...`);
-                continue;
-            }
+            continue;
         }
     }
     
@@ -212,41 +195,6 @@ function createSuccessKeyboard() {
     return Markup.inlineKeyboard([
         [Markup.button.callback('🎯 ɢᴇᴛ ꜱᴛᴀʀᴛᴇᴅ', 'get_started')]
     ]);
-}
-
-// 🎬 ANIMATION FUNCTIONS
-async function sendWelcomeAnimation(ctx) {
-    try {
-        // Send initial message
-        const m = await ctx.reply("<b>ʜᴇʟʟᴏ ʙᴀʙʏ, ʜᴏᴡ ᴀʀᴇ ʏᴏᴜ \nᴡᴀɪᴛ ᴀ ᴍᴏᴍᴇɴᴛ ʙᴀʙʏ ....</b>", { 
-            parse_mode: 'HTML' 
-        });
-        
-        // Animation sequence
-        await new Promise(resolve => setTimeout(resolve, 430));
-        await ctx.telegram.editMessageText(ctx.chat.id, m.message_id, null, "🎊");
-        
-        await new Promise(resolve => setTimeout(resolve, 300));
-        await ctx.telegram.editMessageText(ctx.chat.id, m.message_id, null, "⚡");
-        
-        await new Promise(resolve => setTimeout(resolve, 300));
-        await ctx.telegram.editMessageText(ctx.chat.id, m.message_id, null, "<b>ꜱᴛᴀʀᴛɪɴɢ ʙᴀʙʏ...</b>", { 
-            parse_mode: 'HTML' 
-        });
-        
-        await new Promise(resolve => setTimeout(resolve, 300));
-        await ctx.telegram.deleteMessage(ctx.chat.id, m.message_id);
-        
-        // Send welcome sticker
-        const stickerMsg = await ctx.replyWithSticker(CONFIG.WELCOME_STICKER);
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        await ctx.telegram.deleteMessage(ctx.chat.id, stickerMsg.message_id);
-        
-        return true;
-    } catch (error) {
-        console.error('🎬 Animation error:', error);
-        return false;
-    }
 }
 
 // 🎯 INSTAGRAM DOWNLOADER CORE
@@ -425,7 +373,7 @@ async function handleInstagramCommand(ctx) {
         const userId = ctx.from.id;
         const username = ctx.from.username;
         
-        // 🔒 Force subscription check - ONLY when user sends Instagram link
+        // 🔒 Force subscription check
         const notJoined = await checkForceSub(userId);
         if (notJoined.length > 0) {
             return await sendForceSubMessage(ctx, notJoined);
@@ -596,227 +544,4 @@ async function handleInstagramCommand(ctx) {
                                 parse_mode: 'Markdown',
                                 reply_markup: createMediaKeyboard(instagramUrl, i, videos.length, sessionId).reply_markup
                             }
-                        );
-                        
-                        successCount++;
-                        
-                        // ⏳ Rate limiting
-                        if (i < videos.length - 1) {
-                            await new Promise(resolve => setTimeout(resolve, 1000));
-                        }
-                    }
-                } catch (error) {
-                    console.error(`🎥 Video ${i + 1} error:`, error.message);
-                }
-            }
-
-            if (successCount === 0) {
-                await ctx.reply(
-                    `${getRandomReaction()} *❌ ᴅᴏᴡɴʟᴏᴀᴅ ꜰᴀɪʟᴇᴅ!*\n\n` +
-                    "ᴄᴏᴜʟᴅ ɴᴏᴛ ᴅᴏᴡɴʟᴏᴀᴅ ᴍᴇᴅɪᴀ. ᴘʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ ʟᴀᴛᴇʀ.", 
-                    { parse_mode: 'Markdown' }
-                );
-            } else {
-                await ctx.reply(
-                    `${getRandomReaction()} *✅ ᴅᴏᴡɴʟᴏᴀᴅ ᴄᴏᴍᴘʟᴇᴛᴇ!*\n\n` +
-                    `*${successCount} ᴍᴇᴅɪᴀ ɪᴛᴇᴍs* sᴜᴄᴄᴇssꜰᴜʟʟʏ ᴅᴏᴡɴʟᴏᴀᴅᴇᴅ!\n\n` +
-                    `🦊 *ᴛʜᴀɴᴋs ꜰᴏʀ ᴜsɪɴɢ sᴘɪᴅᴇʏ ᴏꜰꜰɪᴄɪᴀʟ!*`,
-                    { parse_mode: 'Markdown' }
-                );
-            }
-
-        } catch (scraperError) {
-            console.error('💥 Scraper error:', scraperError);
-            await ctx.telegram.deleteMessage(ctx.chat.id, processingMsg.message_id);
-            await ctx.reply(
-                `${getRandomReaction()} *❌ ᴅᴏᴡɴʟᴏᴀᴅ ᴇʀʀᴏʀ!*\n\n` +
-                "ꜰᴀɪʟᴇᴅ ᴛᴏ ꜰᴇᴛᴄʜ ᴍᴇᴅɪᴀ. ᴘʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ ɪɴ ᴀ ꜰᴇᴡ ᴍɪɴᴜᴛᴇs.", 
-                { parse_mode: 'Markdown' }
-            );
-        }
-
-    } catch (error) {
-        console.error('💥 Handler error:', error);
-        await ctx.reply(
-            `${getRandomReaction()} *❌ ᴜɴᴇxᴘᴇᴄᴛᴇᴅ ᴇʀʀᴏʀ!*\n\n` +
-            "sᴏᴍᴇᴛʜɪɴɢ ᴡᴇɴᴛ ᴡʀᴏɴɢ. ᴘʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ.\n\n" +
-            "🦊 *sᴘɪᴅᴇʏ ᴏꜰꜰɪᴄɪᴀʟ*", 
-            { parse_mode: 'Markdown' }
-        );
-    }
-}
-
-// Store processed messages
-const processedMessages = new Set();
-
-// Session storage for navigation
-const userSessions = new Map();
-
-// 👑 ADMIN COMMANDS
-bot.command('stats', async (ctx) => {
-    if (ctx.from.id !== CONFIG.ADMIN_ID) return;
-    
-    await ctx.reply(
-    `${getRandomReaction()} 🦊 *sᴘɪᴅᴇʏ ᴏꜰꜰɪᴄɪᴀʟ - sᴛᴀᴛɪsᴛɪᴄs*\n\n` +
-    `👥 *ᴛᴏᴛᴀʟ ᴜsᴇʀs:* ${database.stats.totalUsers}\n` +
-    `📥 *ᴛᴏᴛᴀʟ ᴅᴏᴡɴʟᴏᴀᴅs:* ${database.stats.totalDownloads}\n` +
-    `🔄 *ᴀᴄᴛɪᴠᴇ sᴇssɪᴏɴs:* ${userSessions.size}\n` +
-    `📅 *ʟᴀsᴛ ᴜᴘᴅᴀᴛᴇ:* ${new Date(database.stats.lastUpdate).toLocaleString()}\n\n` +
-    `🦊 *sᴘɪᴅᴇʏ ᴏꜰꜰɪᴄɪᴀʟ - ᴀᴅᴍɪɴ ᴘᴀɴᴇʟ*`,
-    { parse_mode: 'Markdown' }
-);
-});
-
-// 🎯 BOT COMMANDS
-bot.start(async (ctx) => {
-    const userId = ctx.from.id;
-    
-    // 🎬 Send welcome animation
-    await sendWelcomeAnimation(ctx);
-    
-    await addUser(ctx.from.id, ctx.from.username);
-    
-    const user = ctx.from.first_name || 'User';
-    await ctx.replyWithPhoto(
-        getRandomStartImage(),
-        {
-            caption: `${getRandomReaction()} 🦊 *ᴡᴇʟᴄᴏᴍᴇ ${user}!*\n\n` +
-                    "🎯 *ɪɴsᴛᴀɢʀᴀᴍ ᴅᴏᴡɴʟᴏᴀᴅᴇʀ ᴘʀᴏ ᴠ3.0*\n\n" +
-                    "✨ *ꜰᴇᴀᴛᴜʀᴇs:*\n" +
-                    "• 📸 ᴘʜᴏᴛᴏs & ᴄᴀʀᴏᴜsᴇʟs\n" +
-                    "• 🎥 ᴠɪᴅᴇᴏs & ʀᴇᴇʟs\n" +
-                    "• 💎 ʜᴅ ǫᴜᴀʟɪᴛʏ\n" +
-                    "• 🧩 ɪɴᴛᴇʀᴀᴄᴛɪᴠᴇ ʙᴜᴛᴛᴏɴs\n" +
-                    "• 📝 sᴍᴀʀᴛ ᴄᴀᴘᴛɪᴏɴs\n" +
-                    "• ⚡ ʟɪɢʜᴛɴɪɴɢ ꜰᴀsᴛ\n\n" +
-                    "💥 *sᴍᴀʀᴛᴇʀ • ꜰᴀsᴛᴇʀ • ᴍᴏʀᴇ ᴘᴏᴡᴇʀꜰᴜʟ*",
-            parse_mode: 'Markdown',
-            reply_markup: createMainMenuKeyboard().reply_markup
-        }
-    );
-});
-
-// 🔄 CALLBACK QUERY HANDLER
-bot.on('callback_query', async (ctx) => {
-    const data = ctx.callbackQuery.data;
-    
-    if (data === 'noop') {
-        return await ctx.answerCbQuery();
-    }
-    
-    if (data === 'check_force_sub') {
-        const userId = ctx.from.id;
-        const notJoined = await checkForceSub(userId);
-        
-        if (notJoined.length > 0) {
-            await ctx.editMessageCaption(
-                `${getRandomReaction()} *🔒 ᴀᴄᴄᴇss ʀᴇsᴛʀɪᴄᴛᴇᴅ!*\n\n` +
-                `ᴛᴏ ᴜsᴇ ᴛʜɪs ʙᴏᴛ, ᴘʟᴇᴀsᴇ ᴊᴏɪɴ ᴏᴜʀ ᴄʜᴀɴɴᴇʟs ꜰɪʀsᴛ!\n\n` +
-                `✨ *ʙᴇɴᴇꜰɪᴛs:*\n` +
-                `• ʟᴀᴛᴇsᴛ ᴜᴘᴅᴀᴛᴇs\n` +
-                `• ᴇxᴄʟᴜsɪᴠᴇ ᴄᴏɴᴛᴇɴᴛ\n` +
-                `• ᴄᴏᴍᴍᴜɴɪᴛʏ sᴜᴘᴘᴏʀᴛ\n\n` +
-                `ᴊᴏɪɴ ᴀʟʟ ᴄʜᴀɴɴᴇʟs ʙᴇʟᴏᴡ ᴀɴᴅ ᴄʟɪᴄᴋ ᴛʀʏ ᴀɢᴀɪɴ!`,
-                {
-                    parse_mode: 'Markdown',
-                    reply_markup: createForceSubKeyboard(notJoined).reply_markup
-                }
-            );
-            return await ctx.answerCbQuery(
-                "ɪ ʟɪᴋᴇ ʏᴏᴜʀ sᴍᴀʀᴛɴᴇss, ʙᴜᴛ ᴅᴏɴ'ᴛ ʙᴇ ᴏᴠᴇʀsᴍᴀʀᴛ 😒\nꜰɪʀsᴛ ᴊᴏɪɴ ᴏᴜʀ ᴄʜᴀɴɴᴇʟs 😒",
-                { show_alert: true }
-            );
-        } else {
-            await ctx.reply(
-                `${getRandomReaction()} 🦊 *✅ sᴜᴄᴄᴇssꜰᴜʟʟʏ ᴊᴏɪɴᴇᴅ ᴀʟʟ ᴄʜᴀɴɴᴇʟs!*\n\n` +
-                `🎉 *ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ sᴘɪᴅᴇʏ ᴏꜰꜰɪᴄɪᴀʟ!*\n\n` +
-                `✨ ʏᴏᴜ ɴᴏᴡ ʜᴀᴠᴇ ᴀᴄᴄᴇss ᴛᴏ:\n` +
-                `• 📸 ɪɴsᴛᴀɢʀᴀᴍ ᴍᴇᴅɪᴀ ᴅᴏᴡɴʟᴏᴀᴅᴇʀ\n` +
-                `• 💎 ʜᴅ ǫᴜᴀʟɪᴛʏ ᴅᴏᴡɴʟᴏᴀᴅs\n` +
-                `• ⚡ ꜰᴀsᴛ & sᴇᴄᴜʀᴇ ᴘʀᴏᴄᴇssɪɴɢ\n\n` +
-                `🦊 *ᴄʟɪᴄᴋ ᴛʜᴇ ʙᴜᴛᴛᴏɴ ʙᴇʟᴏᴡ ᴛᴏ ɢᴇᴛ sᴛᴀʀᴛᴇᴅ!*`,
-                {
-                    parse_mode: 'Markdown',
-                    reply_markup: createSuccessKeyboard().reply_markup
-                }
-            );
-            return await ctx.answerCbQuery('✅ ᴀᴄᴄᴇss ɢʀᴀɴᴛᴇᴅ! ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ sᴘɪᴅᴇʏ ᴏꜰꜰɪᴄɪᴀʟ!');
-        }
-    }
-    
-    // Handle other callback buttons...
-    await ctx.answerCbQuery(`${getRandomReaction()} sᴘɪᴅᴇʏ ᴏꜰꜰɪᴄɪᴀʟ ɪs ᴘʀᴏᴄᴇssɪɴɢ...`);
-});
-
-// 🎪 MESSAGE HANDLERS
-bot.on('text', async (ctx) => {
-    const text = ctx.message.text;
-    
-    // 🔒 Force subscription check - ONLY when user sends Instagram link
-    if (text && (text.includes('instagram.com') || text.includes('instagr.am'))) {
-        const notJoined = await checkForceSub(ctx.from.id);
-        if (notJoined.length > 0) {
-            return await sendForceSubMessage(ctx, notJoined);
-        }
-        await handleInstagramCommand(ctx);
-    }
-});
-
-// Handle captions with Instagram links
-bot.on('message', async (ctx) => {
-    const caption = ctx.message?.caption;
-    
-    // 🔒 Force subscription check - ONLY when user sends Instagram link
-    if (caption && (caption.includes('instagram.com') || caption.includes('instagr.am'))) {
-        const notJoined = await checkForceSub(ctx.from.id);
-        if (notJoined.length > 0) {
-            return await sendForceSubMessage(ctx, notJoined);
-        }
-        await handleInstagramCommand(ctx);
-    }
-});
-
-// 🚀 INITIALIZE BOT
-(async () => {
-    await loadDatabase();
-    
-    // 🌐 Web server for deployment
-    const express = require('express');
-    const app = express();
-    
-    app.get('/', (req, res) => {
-        res.json({ 
-            status: '🦊 SPIDEY OFFICIAL is running!',
-            version: '3.0 PRO',
-            users: database.stats.totalUsers,
-            downloads: database.stats.totalDownloads,
-            uptime: process.uptime()
-        });
-    });
-    
-    app.listen(CONFIG.PORT, () => {
-        console.log(`🌐 Web server running on port ${CONFIG.PORT}`);
-    });
-    
-    console.log('🚀 SPIDEY OFFICIAL PRO v3.0 is starting...');
-    bot.launch().then(() => {
-        console.log('✅ SPIDEY OFFICIAL is now running!');
-        console.log('💎 Smarter • Faster • More Powerful');
-        console.log(`📊 Loaded ${database.stats.totalUsers} users, ${database.stats.totalDownloads} downloads`);
-        console.log(`🔗 Force Sub Channels: ${CONFIG.MULTI_FSUB.length}`);
-        console.log(`🖼️ Start Images: ${CONFIG.START_IMG.length}`);
-        console.log(`🎭 Reactions: ${REACTIONS.length} emojis`);
-    });
-})();
-
-// 🛑 GRACEFUL SHUTDOWN
-process.once('SIGINT', async () => {
-    await saveDatabase();
-    bot.stop('SIGINT');
-});
-process.once('SIGTERM', async () => {
-    await saveDatabase();
-    bot.stop('SIGTERM');
-});
-
-module.exports = bot;
+ 
