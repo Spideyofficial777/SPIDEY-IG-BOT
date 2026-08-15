@@ -1,12 +1,11 @@
 {
   "name": "spidey-instagram-bot",
-  "version": "3.1.0",
-  "description": "🕷️ SPIDEY OFFICIAL - Instagram Downloader PRO v3.1 (modular)",
-  "main": "index.js",
+  "version": "3.0.0",
+  "description": "🕷️ SPIDEY OFFICIAL - Instagram Downloader PRO v3.0",
+  "main": "ig.js",
   "scripts": {
     "start": "node ig.js",
-    "dev": "nodemon ig.js",
-    "check": "node -e \"require('./ig.js')\""
+    "dev": "nodemon ig.js"
   },
   "dependencies": {
     "axios": "^1.6.0",
