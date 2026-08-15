@@ -4,8 +4,8 @@
   "description": "🕷️ SPIDEY OFFICIAL - Instagram Downloader PRO v3.1 (modular)",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
+    "start": "node ig.js",
+    "dev": "nodemon ig.js",
     "check": "node -e \"require('./index.js')\""
   },
   "dependencies": {
