@@ -544,4 +544,211 @@ async function handleInstagramCommand(ctx) {
                                 parse_mode: 'Markdown',
                                 reply_markup: createMediaKeyboard(instagramUrl, i, videos.length, sessionId).reply_markup
                             }
- 
+                        );
+                        
+                        successCount++;
+                        
+                        // ⏳ Rate limiting
+                        if (i < videos.length - 1) {
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
+                    }
+                } catch (error) {
+                    console.error(`🎥 Video ${i + 1} error:`, error.message);
+                }
+            }
+
+            if (successCount === 0) {
+                await ctx.reply(
+                    `${getRandomReaction()} *❌ ᴅᴏᴡɴʟᴏᴀᴅ ꜰᴀɪʟᴇᴅ!*\n\n` +
+                    "ᴄᴏᴜʟᴅ ɴᴏᴛ ᴅᴏᴡɴʟᴏᴀᴅ ᴍᴇᴅɪᴀ. ᴘʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ ʟᴀᴛᴇʀ.", 
+                    { parse_mode: 'Markdown' }
+                );
+            } else {
+                await ctx.reply(
+                    `${getRandomReaction()} *✅ ᴅᴏᴡɴʟᴏᴀᴅ ᴄᴏᴍᴘʟᴇᴛᴇ!*\n\n` +
+                    `*${successCount} ᴍᴇᴅɪᴀ ɪᴛᴇᴍs* sᴜᴄᴄᴇssꜰᴜʟʟʏ ᴅᴏᴡɴʟᴏᴀᴅᴇᴅ!\n\n` +
+                    `🦊 *ᴛʜᴀɴᴋs ꜰᴏʀ ᴜsɪɴɢ sᴘɪᴅᴇʏ ᴏꜰꜰɪᴄɪᴀʟ!*`,
+                    { parse_mode: 'Markdown' }
+                );
+            }
+
+        } catch (scraperError) {
+            console.error('💥 Scraper error:', scraperError);
+            await ctx.telegram.deleteMessage(ctx.chat.id, processingMsg.message_id);
+            await ctx.reply(
+                `${getRandomReaction()} *❌ ᴅᴏᴡɴʟᴏᴀᴅ ᴇʀʀᴏʀ!*\n\n` +
+                "ꜰᴀɪʟᴇᴅ ᴛᴏ ꜰᴇᴛᴄʜ ᴍᴇᴅɪᴀ. ᴘʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ ɪɴ ᴀ ꜰᴇᴡ ᴍɪɴᴜᴛᴇs.", 
+                { parse_mode: 'Markdown' }
+            );
+        }
+
+    } catch (error) {
+        console.error('💥 Handler error:', error);
+        await ctx.reply(
+            `${getRandomReaction()} *❌ ᴜɴᴇxᴘᴇᴄᴛᴇᴅ ᴇʀʀᴏʀ!*\n\n` +
+            "sᴏᴍᴇᴛʜɪɴɢ ᴡᴇɴᴛ ᴡʀᴏɴɢ. ᴘʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ.\n\n" +
+            "🦊 *sᴘɪᴅᴇʏ ᴏꜰꜰɪᴄɪᴀʟ*", 
+            { parse_mode: 'Markdown' }
+        );
+    }
+}
+
+// 👑 ADMIN COMMANDS
+bot.command('stats', async (ctx) => {
+    if (ctx.from.id !== CONFIG.ADMIN_ID) return;
+    
+    await ctx.reply(
+    `${getRandomReaction()} 🦊 *sᴘɪᴅᴇʏ ᴏꜰꜰɪᴄɪᴀʟ - sᴛᴀᴛɪsᴛɪᴄs*\n\n` +
+    `👥 *ᴛᴏᴛᴀʟ ᴜsᴇʀs:* ${database.stats.totalUsers}\n` +
+    `📥 *ᴛᴏᴛᴀʟ ᴅᴏᴡɴʟᴏᴀᴅs:* ${database.stats.totalDownloads}\n` +
+    `🔄 *ᴀᴄᴛɪᴠᴇ sᴇssɪᴏɴs:* ${userSessions.size}\n` +
+    `📅 *ʟᴀsᴛ ᴜᴘᴅᴀᴛᴇ:* ${new Date(database.stats.lastUpdate).toLocaleString()}\n\n` +
+    `🦊 *sᴘɪᴅᴇʏ ᴏꜰꜰɪᴄɪᴀʟ - ᴀᴅᴍɪɴ ᴘᴀɴᴇʟ*`,
+    { parse_mode: 'Markdown' }
+);
+});
+
+// 🎯 BOT COMMANDS
+bot.start(async (ctx) => {
+    const userId = ctx.from.id;
+    
+    // 🔒 Force subscription check
+    const notJoined = await checkForceSub(userId);
+    if (notJoined.length > 0) {
+        return await sendForceSubMessage(ctx, notJoined);
+    }
+    
+    await addUser(ctx.from.id, ctx.from.username);
+    
+    const user = ctx.from.first_name || 'User';
+    await ctx.replyWithPhoto(
+        getRandomStartImage(),
+        {
+            caption: `${getRandomReaction()} 🦊 *ᴡᴇʟᴄᴏᴍᴇ ${user}!*\n\n` +
+                    "🎯 *ɪɴsᴛᴀɢʀᴀᴍ ᴅᴏᴡɴʟᴏᴀᴅᴇʀ ᴘʀᴏ ᴠ3.0*\n\n" +
+                    "✨ *ꜰᴇᴀᴛᴜʀᴇs:*\n" +
+                    "• 📸 ᴘʜᴏᴛᴏs & ᴄᴀʀᴏᴜsᴇʟs\n" +
+                    "• 🎥 ᴠɪᴅᴇᴏs & ʀᴇᴇʟs\n" +
+                    "• 💎 ʜᴅ ǫᴜᴀʟɪᴛʏ\n" +
+                    "• 🧩 ɪɴᴛᴇʀᴀᴄᴛɪᴠᴇ ʙᴜᴛᴛᴏɴs\n" +
+                    "• 📝 sᴍᴀʀᴛ ᴄᴀᴘᴛɪᴏɴs\n" +
+                    "• ⚡ ʟɪɢʜᴛɴɪɴɢ ꜰᴀsᴛ\n\n" +
+                    "💥 *sᴍᴀʀᴛᴇʀ • ꜰᴀsᴛᴇʀ • ᴍᴏʀᴇ ᴘᴏᴡᴇʀꜰᴜʟ*",
+            parse_mode: 'Markdown',
+            reply_markup: createMainMenuKeyboard().reply_markup
+        }
+    );
+});
+
+// 🔄 CALLBACK QUERY HANDLER
+bot.on('callback_query', async (ctx) => {
+    const data = ctx.callbackQuery.data;
+    
+    if (data === 'noop') {
+        return await ctx.answerCbQuery();
+    }
+    
+    if (data === 'check_force_sub') {
+        const userId = ctx.from.id;
+        const notJoined = await checkForceSub(userId);
+        
+        if (notJoined.length > 0) {
+            await ctx.editMessageCaption(
+                `${getRandomReaction()} *🔒 ᴀᴄᴄᴇss ʀᴇsᴛʀɪᴄᴛᴇᴅ!*\n\n` +
+                `ᴛᴏ ᴜsᴇ ᴛʜɪs ʙᴏᴛ, ᴘʟᴇᴀsᴇ ᴊᴏɪɴ ᴏᴜʀ ᴄʜᴀɴɴᴇʟs ꜰɪʀsᴛ!\n\n` +
+                `✨ *ʙᴇɴᴇꜰɪᴛs:*\n` +
+                `• ʟᴀᴛᴇsᴛ ᴜᴘᴅᴀᴛᴇs\n` +
+                `• ᴇxᴄʟᴜsɪᴠᴇ ᴄᴏɴᴛᴇɴᴛ\n` +
+                `• ᴄᴏᴍᴍᴜɴɪᴛʏ sᴜᴘᴘᴏʀᴛ\n\n` +
+                `ᴊᴏɪɴ ᴀʟʟ ᴄʜᴀɴɴᴇʟs ʙᴇʟᴏᴡ ᴀɴᴅ ᴄʟɪᴄᴋ ᴛʀʏ ᴀɢᴀɪɴ!`,
+                {
+                    parse_mode: 'Markdown',
+                    reply_markup: createForceSubKeyboard(notJoined).reply_markup
+                }
+            );
+            return await ctx.answerCbQuery(
+                "ɪ ʟɪᴋᴇ ʏᴏᴜʀ sᴍᴀʀᴛɴᴇss, ʙᴜᴛ ᴅᴏɴ'ᴛ ʙᴇ ᴏᴠᴇʀsᴍᴀʀᴛ 😒\nꜰɪʀsᴛ ᴊᴏɪɴ ᴏᴜʀ ᴄʜᴀɴɴᴇʟs 😒",
+                { show_alert: true }
+            );
+        } else {
+            await ctx.reply(
+                `${getRandomReaction()} 🦊 *✅ sᴜᴄᴄᴇssꜰᴜʟʟʏ ᴊᴏɪɴᴇᴅ ᴀʟʟ ᴄʜᴀɴɴᴇʟs!*\n\n` +
+                `🎉 *ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ sᴘɪᴅᴇʏ ᴏꜰꜰɪᴄɪᴀʟ!*\n\n` +
+                `✨ ʏᴏᴜ ɴᴏᴡ ʜᴀᴠᴇ ᴀᴄᴄᴇss ᴛᴏ:\n` +
+                `• 📸 ɪɴsᴛᴀɢʀᴀᴍ ᴍᴇᴅɪᴀ ᴅᴏᴡɴʟᴏᴀᴅᴇʀ\n` +
+                `• 💎 ʜᴅ ǫᴜᴀʟɪᴛʏ ᴅᴏᴡɴʟᴏᴀᴅs\n` +
+                `• ⚡ ꜰᴀsᴛ & sᴇᴄᴜʀᴇ ᴘʀᴏᴄᴇssɪɴɢ\n\n` +
+                `🦊 *ᴄʟɪᴄᴋ ᴛʜᴇ ʙᴜᴛᴛᴏɴ ʙᴇʟᴏᴡ ᴛᴏ ɢᴇᴛ sᴛᴀʀᴛᴇᴅ!*`,
+                {
+                    parse_mode: 'Markdown',
+                    reply_markup: createSuccessKeyboard().reply_markup
+                }
+            );
+            return await ctx.answerCbQuery('✅ ᴀᴄᴄᴇss ɢʀᴀɴᴛᴇᴅ! ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ sᴘɪᴅᴇʏ ᴏꜰꜰɪᴄɪᴀʟ!');
+        }
+    }
+    
+    // Handle other callback buttons...
+    await ctx.answerCbQuery(`${getRandomReaction()} sᴘɪᴅᴇʏ ᴏꜰꜰɪᴄɪᴀʟ ɪs ᴘʀᴏᴄᴇssɪɴɢ...`);
+});
+
+// 🎪 MESSAGE HANDLERS
+bot.on('text', async (ctx) => {
+    const text = ctx.message.text;
+    
+    // 🔒 Force subscription check
+    const notJoined = await checkForceSub(ctx.from.id);
+    if (notJoined.length > 0) {
+        return await sendForceSubMessage(ctx, notJoined);
+    }
+    
+    if (text && (text.includes('instagram.com') || text.includes('instagr.am'))) {
+        await handleInstagramCommand(ctx);
+    }
+});
+
+// 🚀 INITIALIZE BOT
+(async () => {
+    await loadDatabase();
+    
+    // 🌐 Web server for deployment
+    const express = require('express');
+    const app = express();
+    
+    app.get('/', (req, res) => {
+        res.json({ 
+            status: '🦊 SPIDEY OFFICIAL is running!',
+            version: '3.0 PRO',
+            users: database.stats.totalUsers,
+            downloads: database.stats.totalDownloads,
+            uptime: process.uptime()
+        });
+    });
+    
+    app.listen(CONFIG.PORT, () => {
+        console.log(`🌐 Web server running on port ${CONFIG.PORT}`);
+    });
+    
+    console.log('🚀 SPIDEY OFFICIAL PRO v3.0 is starting...');
+    bot.launch().then(() => {
+        console.log('✅ SPIDEY OFFICIAL is now running!');
+        console.log('💎 Smarter • Faster • More Powerful');
+        console.log(`📊 Loaded ${database.stats.totalUsers} users, ${database.stats.totalDownloads} downloads`);
+        console.log(`🔗 Force Sub Channels: ${CONFIG.MULTI_FSUB.length}`);
+        console.log(`🖼️ Start Images: ${CONFIG.START_IMG.length}`);
+        console.log(`🎭 Reactions: ${REACTIONS.length} emojis`);
+    });
+})();
+
+// 🛑 GRACEFUL SHUTDOWN
+process.once('SIGINT', async () => {
+    await saveDatabase();
+    bot.stop('SIGINT');
+});
+process.once('SIGTERM', async () => {
+    await saveDatabase();
+    bot.stop('SIGTERM');
+});
+
+module.exports = bot;
